@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32-CAM Phone Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-6 flex flex-col items-center justify-center min-h-screen">
+    <div class="w-full max-w-md text-center space-y-6">
+        <h1 class="text-2xl font-black text-amber-500">📱 Phone Cam Simulator</h1>
+        <p class="text-xs text-slate-400">ใช้ทดสอบการส่งภาพเข้าหลังบ้านแทนบอร์ด ESP32-CAM</p>
+        
+        <!-- ช่องรับไฟล์อัพโหลดที่เปิดกล้องถ่ายรูปบนมือถือทันที -->
+        <div class="bg-slate-800 p-8 rounded-3xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center">
+            <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="previewAndUpload(event)">
+            <label for="camera-input" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-4 rounded-2xl cursor-pointer shadow-lg transition">
+                📸 กดเพื่อเปิดกล้อง/ถ่ายภาพ
+            </label>
+        </div>
+
+        <div id="status" class="text-sm font-semibold text-slate-300">💡 รอการถ่ายภาพ...</div>
+        <img id="preview" class="hidden w-full max-h-64 object-cover rounded-2xl border border-slate-700 shadow-md">
+    </div>
+
+    <script>
+        // ⚠️ เปลี่ยน localhost เป็นเลขอีพีภายใน Wi-Fi ของเครื่องคอมพิวเตอร์คุณ เช่น 192.168.1.XX
+        const SERVER_IP = "http://localhost:3000"; 
+
+        async function previewAndUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // แสดงภาพพรีวิวบนจอโทรศัพท์
+            const preview = document.getElementById('preview');
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+
+            const status = document.getElementById('status');
+            status.innerText = "⏳ กำลังส่งภาพไปที่หลังบ้าน...";
+
+            // แพ็กไฟล์ใส่ FormData เพื่อเตรียมยิงเข้า API
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(`${SERVER_IP}/api/upload-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    status.innerHTML = `<span class="text-green-400">✅ หลังบ้านได้รับภาพแล้ว: ${result.filename}</span>`;
+                } else {
+                    status.innerHTML = `<span class="text-red-400">❌ เกิดข้อผิดพลาด: ${result.error}</span>`;
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="text-red-400">❌ ติดต่อหลังบ้านไม่ได้ (เช็กพอร์ตหรือ IP Wi-Fi)</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

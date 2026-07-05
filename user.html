@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMINI - คืนสิ่งของที่หล่นหาย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.98/build/spline-viewer.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        .floating-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 10; }
+        spline-viewer { width: 100%; height: 100%; }
+    </style>
+</head>
+<body class="bg-white text-slate-800 font-sans">
+
+    <!-- ส่วนหน้าแรก 3D LANDING PAGE -->
+    <div class="relative w-full h-screen flex flex-col justify-between items-center p-6 bg-slate-50 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="w-full max-w-7xl flex justify-between items-center z-20 select-none">
+            <div class="flex flex-col">
+                <span class="text-3xl font-black tracking-wider text-[#D97706]">GEMINI</span>
+                <span class="text-xs font-bold text-slate-500 tracking-widest text-center">จีมินิ</span>
+            </div>
+            <a href="#" class="text-emerald-700 font-bold text-lg hover:underline">คู่มือ</a>
+        </div>
+
+        <!-- Spline Viewer -->
+        <div class="floating-canvas">
+            <spline-viewer url="https://prod.spline.design/tvoXQUgrZr4zPEZb/scene.splinecode"></spline-viewer>
+        </div>
+
+        <!-- 2 ปุ่มกดเปิดป๊อปอัป -->
+        <div class="text-center z-20 pb-6 flex gap-4">
+            <button onclick="openModal('login-modal')" class="bg-black text-white text-md font-bold px-10 py-3 rounded-full shadow-xl transition duration-200 transform hover:scale-105 active:scale-95">
+                Log in
+            </button>
+            <button onclick="openModal('signup-modal')" class="bg-[#C2544A] hover:bg-[#A8443B] text-white text-md font-bold px-10 py-3 rounded-full shadow-xl transition duration-200 transform hover:scale-105 active:scale-95">
+                Sign up
+            </button>
+        </div>
+
+        <!-- ================= 🔐 กล่องป๊อปอัป LOG IN ================= -->
+        <div id="login-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="w-full max-w-md bg-white border border-slate-400 rounded-[2.5rem] shadow-2xl p-8 relative mt-6">
+                <button onclick="closeModal('login-modal')" class="absolute top-5 right-6 text-slate-400 hover:text-slate-800 font-mono text-xl font-bold z-30">X</button>
+                <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-2xl font-black px-12 py-2.5 rounded-full tracking-wider shadow-md z-20 whitespace-nowrap">LOG IN</div>
+                
+                <form onsubmit="handleLogin(event)" class="space-y-4 mt-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">Email หรือ เบอร์โทรศัพท์</label>
+                        <input type="text" id="login-identifier" required placeholder="กรอกอีเมล หรือ เบอร์โทร" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5 text-slate-800 focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">Password (รหัสผ่าน)</label>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5 text-slate-800 focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div class="pt-4 flex justify-center">
+                        <button type="submit" class="bg-black hover:bg-slate-900 text-white text-xl font-bold px-16 py-3 rounded-2xl shadow-lg transition duration-200 transform hover:scale-105">
+                            Sign in
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= 📝 กล่องป๊อปอัป SIGN UP ================= -->
+        <div id="signup-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="w-full max-w-xl bg-white border border-slate-400 rounded-[2.5rem] shadow-2xl p-8 relative mt-6">
+                <button onclick="closeModal('signup-modal')" class="absolute top-5 right-6 text-slate-400 hover:text-slate-800 font-mono text-xl font-bold z-30">X</button>
+                <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#C2544A] text-white text-2xl font-black px-12 py-2.5 rounded-full tracking-wider shadow-md z-20 whitespace-nowrap">SIGN UP</div>
+                
+                <form onsubmit="handleSignup(event)" class="space-y-4 mt-6 max-h-[75vh] overflow-y-auto px-1">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">Email</label>
+                        <input type="email" id="email" required class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5 text-slate-800">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">ชื่อจริง</label>
+                            <input type="text" id="firstname" required class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">นามสกุล</label>
+                            <input type="text" id="lastname" required class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">เบอร์โทรศัพท์</label>
+                        <input type="text" id="phone" required maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="กรอกตัวเลข 10 หลัก" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">รหัสประจำตัวนักเรียน</label>
+                        <input type="text" id="student_id" required maxlength="5" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="กรอกตัวเลข 5 หลัก" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">มัธยมศึกษาปีที่.../...</label>
+                            <input type="text" id="grade" placeholder="เช่น 5/1" required class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">เลขที่...ห้อง ก, ข</label>
+                            <input type="text" id="room_no" placeholder="เช่น เลขที่ 15 ห้อง ก" required class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-1">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">ตั้งรหัสผ่าน (คอลัมน์แรก)</label>
+                            <input type="password" id="password" required placeholder="ตั้งรหัสผ่าน" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1 ml-1">ยืนยันรหัสผ่าน (คอลัมน์สอง)</label>
+                            <input type="password" id="confirm-password" required placeholder="กรอกให้ตรงกัน" class="w-full bg-slate-200 border-none rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div class="pt-4 flex justify-center">
+                        <button type="submit" class="bg-[#C2544A] hover:bg-[#A8443B] text-white text-xl font-bold px-16 py-3 rounded-2xl shadow-lg transition duration-200 transform hover:scale-105">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:3000";
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // ล็อกอินสำเร็จ -> จำเมลยัดใส่ Session -> ย้ายหน้าไปบอร์ดค้นหาหลัก
+        async function handleLogin(event) {
+            event.preventDefault();
+            const identifier = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/login-auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, password })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert("เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับค่ะ");
+                    localStorage.setItem('userEmail', result.user.email); // จำข้อมูลอีเมลไว้ใช้ข้ามหน้า
+                    window.location.href = "dashboard.html"; // 🟢 ย้ายหน้าต่างเว็บหลักตัวจริง
+                } else {
+                    alert(result.error || "ไอดีหรือรหัสผ่านไม่ถูกต้อง");
+                }
+            } catch (error) {
+                alert("เกิดข้อผิดพลาดในการติดต่อเซิร์ฟเวอร์หลังบ้าน");
+            }
+        }
+
+        // สมัครใช้งานสำเร็จ -> จำเมล -> ย้ายหน้าไปบอร์ดค้นหาหลัก
+        async function handleSignup(event) {
+            event.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (password !== confirmPassword) { return alert("⚠️ รหัสผ่านช่องที่สองไม่ตรงกับช่องแรกค่ะ"); }
+
+            const phoneValue = document.getElementById('phone').value.trim();
+            const studentIdValue = document.getElementById('student_id').value.trim();
+
+            if (phoneValue.length !== 10) { return alert("⚠️ เบอร์โทรต้องครบ 10 หลักพอดีค่ะ"); }
+            if (studentIdValue.length !== 5) { return alert("⚠️ รหัสนักเรียนต้องครบ 5 หลักพอดีค่ะ"); }
+
+            const formData = {
+                email: document.getElementById('email').value.trim(),
+                firstname: document.getElementById('firstname').value.trim(),
+                lastname: document.getElementById('lastname').value.trim(),
+                phone: phoneValue,
+                student_id: studentIdValue,
+                grade: document.getElementById('grade').value.trim(),
+                room_no: document.getElementById('room_no').value.trim(),
+                password: password
+            };
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/signup-auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert("ลงทะเบียนผู้ใช้งานรายใหม่เรียบร้อยแล้วค่ะ!");
+                    localStorage.setItem('userEmail', formData.email);
+                    window.location.href = "dashboard.html"; // 🟢 ย้ายหน้าต่างเว็บหลักตัวจริง
+                } else {
+                    const result = await response.json();
+                    alert(result.error || "เกิดข้อผิดพลาด");
+                }
+            } catch (error) {
+                alert("ไม่สามารถติดต่อหลังบ้านได้");
+            }
+        }
+    </script>
+</body>
+</html>

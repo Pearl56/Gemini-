@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMINI - หน้าหลักระบบกระดานค้นหาของหาย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* เปิดระบบเลื่อนหน้าเว็บได้ปกติอย่างอิสระ */
+        body, html { overflow: auto !important; min-h-screen: 100vh; }
+    </style>
+</head>
+<body class="bg-white p-6 text-slate-800 font-sans select-none">
+
+    <div class="max-w-7xl mx-auto flex flex-col justify-between min-h-[92vh] gap-8">
+        
+        <!-- แถบด้านบน (Header Dashboard) -->
+        <div class="w-full flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-100 pb-6">
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col">
+                    <span class="text-3xl font-black tracking-wider text-[#D97706]">GEMINI</span>
+                    <span class="text-xs font-bold text-slate-400 tracking-widest text-center">จีมินิ</span>
+                </div>
+                <button class="bg-[#A3A3A3] hover:bg-slate-500 text-white font-bold px-6 py-2 rounded-xl text-md border border-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] transition ml-2">
+                    วิธีการใช้งาน
+                </button>
+            </div>
+
+            <!-- ช่องค้นหาตรงกลาง -->
+            <div class="relative w-full max-w-xl">
+                <input type="text" placeholder="ค้นหาของหาย/หมวดหมู่......" class="w-full border-2 border-black rounded-none pl-4 pr-12 py-2 text-md focus:outline-none">
+                <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-black">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ปุ่มออกจากระบบ -->
+            <div>
+                <button onclick="logout()" class="text-black font-black text-lg underline tracking-wide hover:text-red-600 transition">ออกจากระบบ</button>
+            </div>
+        </div>
+
+        <!-- เนื้อหาหลัก: หมวดหมู่แยก 3 คอลัมน์ (อ้างอิงตามรูปภาพ image_a0d17c.png) -->
+        <div class="w-full text-center py-4">
+            <h3 class="text-3xl font-black text-emerald-700 tracking-wide mb-8">หมวดหมู่แยก</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- คอลัมน์ที่ 1: เอกสารสำคัญ -->
+                <div class="border-2 border-emerald-600 rounded-2xl p-6 bg-white flex flex-col items-center justify-center min-h-[220px] shadow-sm hover:shadow-md transition cursor-pointer">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2991/2991106.png" class="w-20 h-20 object-contain mb-4" style="filter: sepia(1) hue-rotate(15deg) saturate(3.5);">
+                    <span class="text-2xl font-bold text-slate-800">เอกสารสำคัญ</span>
+                </div>
+
+                <!-- คอลัมน์ที่ 2: อุปกรณ์อิเล็กทรอนิกส์ -->
+                <div class="border-2 border-emerald-600 rounded-2xl p-6 bg-white flex flex-col items-center justify-center min-h-[220px] shadow-sm hover:shadow-md transition cursor-pointer">
+                    <img src="https://cdn-icons-png.flaticon.com/512/689/689311.png" class="w-20 h-20 object-contain mb-4" style="filter: sepia(1) hue-rotate(15deg) saturate(3.5);">
+                    <span class="text-2xl font-bold text-slate-800">อุปกรณ์อิเล็กทรอนิกส์</span>
+                </div>
+
+                <!-- คอลัมน์ที่ 3: อื่นๆ -->
+                <div class="border-2 border-emerald-600 rounded-2xl p-6 bg-white flex flex-col items-center justify-center min-h-[220px] shadow-sm hover:shadow-md transition cursor-pointer">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3771/3771278.png" class="w-20 h-20 object-contain mb-4" style="filter: sepia(1) hue-rotate(15deg) saturate(3.5);">
+                    <span class="text-2xl font-bold text-slate-800">อื่นๆ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- แถบสโลแกนท้ายและปุ่มควบคุมหลักด้านล่างสุด -->
+        <div class="w-full flex flex-col items-center gap-6">
+            <div class="w-full bg-[#939393] text-white text-center py-4 px-6 rounded-2xl font-bold text-xl md:text-2xl leading-relaxed shadow-sm">
+                คืนสิ่งของที่หล่นหาย<br>ด้วย ความซื่อสัตย์ และ บริสุทธิ์
+            </div>
+
+            <div class="w-full flex flex-col md:flex-row justify-center items-center gap-6 pt-2">
+                <button class="bg-[#007A1A] hover:bg-green-800 text-white text-xl font-bold px-8 py-3 rounded-full flex items-center gap-2 shadow-md transition w-full md:w-auto justify-center">
+                    <span class="text-2xl font-light">+</span> ปุ่มแจ้งของหาย
+                </button>
+                <button class="bg-[#FFD100] hover:bg-amber-400 text-slate-900 text-xl font-bold px-12 py-3 rounded-full flex items-center gap-2 shadow-md transition w-full md:w-auto justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.604 10.604Z" /></svg>
+                    ตามหา...
+                </button>
+                <button onclick="toggleChatWidget()" class="bg-white hover:bg-slate-50 text-slate-800 border-4 border-indigo-500 rounded-2xl px-10 py-2.5 text-xl font-bold shadow-md transition w-full md:w-auto justify-center">
+                    ติดต่อแอดมิน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- วิดเจ็ตกล่องแชทสดติดต่อแอดมินหลังบ้าน -->
+    <div id="chat-widget" class="hidden fixed bottom-6 right-6 w-80 h-96 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 flex flex-col justify-between z-50">
+        <div class="p-3 bg-slate-950 rounded-t-2xl font-bold text-sm text-indigo-400 border-b border-slate-800 flex justify-between items-center">
+            <span>💬 คุยกับผู้ดูแลระบบ</span>
+            <button onclick="toggleChatWidget()" class="text-slate-400 hover:text-white font-mono">X</button>
+        </div>
+        <div id="chat-box" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs bg-slate-900/40 text-slate-100"></div>
+        <div class="p-2 border-t border-slate-700 bg-slate-800 flex gap-1">
+            <input type="text" id="chat-input" placeholder="พิมพ์ข้อความ..." class="w-full bg-slate-900 border-none rounded-lg p-2 text-xs text-white focus:outline-none" onkeypress="if(event.key === 'Enter') sendChat()">
+            <button onclick="sendChat()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 rounded-lg transition font-bold">ส่ง</button>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:3000";
+        // ดึงค่าอีเมลของยูเซอร์ที่จำไว้มาจากหน้าล็อกอิน
+        const userEmail = localStorage.getItem('userEmail'); 
+        let socket;
+
+        // ระบบตรวจสอบความปลอดภัยเบื้องต้น: ถ้าผู้ใช้แอบพิมพ์ URL เข้ามาตรงๆ โดยไม่ล็อกอิน ให้ดีดกลับไปหน้าแรก
+        if (!userEmail) {
+            alert("กรุณาเข้าสู่ระบบก่อนใช้งานค่ะ");
+            window.location.href = "user.html";
+        } else {
+            // เชื่อมท่อแชทสดทันทีเมื่อหน้าเว็บหลักตัวจริงทำงานสำเร็จ
+            socket = io(BACKEND_URL);
+            socket.emit('register_user', userEmail);
+
+            socket.on('receive_private_message', (data) => {
+                if (data.sender === "admin@system.com" && data.receiver === userEmail) {
+                    appendChatMsg(data.sender, data.message, false);
+                }
+            });
+        }
+
+        function toggleChatWidget() { document.getElementById('chat-widget').classList.toggle('hidden'); }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            appendChatMsg(userEmail, msg, true);
+            socket.emit('send_private_message', { sender: userEmail, receiver: "admin@system.com", message: msg });
+            input.value = "";
+        }
+
+        function appendChatMsg(sender, message, isMe) {
+            const box = document.getElementById('chat-box');
+            const msgHtml = `<div class="p-2 rounded-xl max-w-[85%] text-xs ${isMe ? 'bg-indigo-600 text-white ml-auto rounded-tr-none' : 'bg-slate-700 text-slate-100 rounded-tl-none'} mb-1.5 break-words">${message}</div>`;
+            box.insertAdjacentHTML('beforeend', msgHtml);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function logout() {
+            localStorage.clear(); // ล้างความจำระบบ
+            window.location.href = "user.html"; // พากลับหน้าล็อกอินหลัก 3D
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบควบคุมหลังบ้าน (Admin Dashboard)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 font-sans">
+
+    <div class="max-w-6xl mx-auto bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[650px]">
+        
+        <!-- แถบซ้าย: รายชื่อผู้ใช้ -->
+        <div class="w-full md:w-80 bg-slate-950 border-r border-slate-700 flex flex-col justify-between">
+            <div>
+                <div class="p-4 border-b border-slate-700">
+                    <h2 class="text-lg font-bold text-amber-400">📊 ข้อมูลผู้ใช้ในระบบ</h2>
+                    <p class="text-xs text-slate-400">แสดงรายชื่อที่รวบรวมจากหลังบ้าน</p>
+                </div>
+                <div id="users-list" class="overflow-y-auto p-2 space-y-1 h-[480px]">
+                    <p class="text-slate-500 text-xs italic text-center mt-4">ไม่มีข้อมูลผู้ใช้งาน</p>
+                </div>
+            </div>
+            <div class="p-3 bg-slate-900 border-t border-slate-800">
+                <button onclick="loadUsersFromBackend()" class="w-full bg-slate-800 hover:bg-slate-700 text-xs font-bold py-2 rounded-lg transition">
+                    🔄 อัปเดตรายชื่อใหม่
+                </button>
+            </div>
+        </div>
+
+        <!-- แถบขวา: ระบบห้องแชทโต้ตอบรายคน -->
+        <div class="flex-1 flex flex-col justify-between bg-slate-900/30">
+            <div class="bg-slate-950/60 p-4 border-b border-slate-700 flex justify-between items-center">
+                <div>
+                    <h2 class="text-md font-bold text-slate-200">💬 กล่องข้อความแชทรายคน</h2>
+                    <p id="current-chat-target" class="text-xs text-rose-400 font-mono font-bold mt-0.5">⚠️ ยังไม่ได้เลือกผู้รับปลายทาง</p>
+                </div>
+                <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">แอดมินหลัก</span>
+            </div>
+
+            <div id="admin-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
+                <p class="text-slate-500 italic text-center my-auto">กรุณาคลิกเลือกผู้ใช้งานที่แถบซ้ายมือเพื่อดูประวัติแชทและเริ่มต้นโต้ตอบ</p>
+            </div>
+
+            <div class="p-4 bg-slate-950/40 border-t border-slate-700 flex gap-2">
+                <input type="text" id="admin-chat-input" placeholder="พิมพ์ข้อความตอบกลับผู้ใช้..." 
+                    class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 w-full focus:outline-none focus:border-amber-500"
+                    onkeypress="if(event.key === 'Enter') sendAdminMsg()">
+                <button onclick="sendAdminMsg()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 rounded-xl transition">
+                    ตอบกลับ
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:3000";
+        const socket = io(BACKEND_URL);
+        const myEmail = "admin@system.com";
+        let activeTargetUser = "";
+
+        socket.emit('register_user', myEmail);
+        loadUsersFromBackend();
+
+        socket.on('system_update_users', () => loadUsersFromBackend());
+        
+        socket.on('receive_private_message', (data) => {
+            // ดึงข้อมูลมาอัปเดตบนหน้าจอสด ๆ เฉพาะตอนที่เรากําลังเปิดหน้าต่างแชทของคนนั้นค้างไว้
+            if (data.sender === activeTargetUser && data.receiver === myEmail) {
+                appendAdminMessage(data.sender, data.message, false, data.timestamp);
+            }
+        });
+
+        async function loadUsersFromBackend() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/users`);
+                const users = await res.ok ? await res.json() : [];
+                const container = document.getElementById('users-list');
+                
+                if (users.length === 0) {
+                    container.innerHTML = `<p class="text-slate-500 text-xs italic text-center mt-4">ไม่มีข้อมูลผู้ใช้งานในระบบ</p>`;
+                    return;
+                }
+
+                container.innerHTML = users.map(u => `
+                    <button onclick="selectUser('${u.email}')" 
+                        class="w-full text-left p-3 rounded-xl transition flex items-center justify-between text-sm ${activeTargetUser === u.email ? 'bg-indigo-600/30 border border-indigo-500/40' : 'bg-slate-900 hover:bg-slate-800 border border-transparent'}">
+                        <div class="truncate pr-2">
+                            <p class="font-medium text-slate-200 truncate">${u.email}</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5 truncate">IP: ${u.ipAddress}</p>
+                        </div>
+                        <span class="w-2 h-2 rounded-full shrink-0 ${u.status === 'online' ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-slate-600'}"></span>
+                    </button>
+                `).join('');
+
+            } catch (err) {
+                console.error("โหลดข้อมูลผู้ใช้ล้มเหลว");
+            }
+        }
+
+        // 🟢 แก้ไขฟังก์ชันนี้: ให้โหลดประวัติแชทเก่าของยูเซอร์คนนี้มาจากหลังบ้านทุกครั้งที่กดสลับคุย
+        async function selectUser(email) {
+            activeTargetUser = email;
+            document.getElementById('current-chat-target').innerText = `กำลังคุยกับ: ${email}`;
+            
+            const box = document.getElementById('admin-chat-messages');
+            box.innerHTML = `<p class="text-slate-500 italic text-center">กำลังโหลดประวัติแชท...</p>`;
+            
+            loadUsersFromBackend(); // อัปเดตสีปุ่มไฮไลต์ฝั่งซ้าย
+
+            try {
+                // ยิง API ไปขอประวัติแชทระหว่างแอดมินกับยูเซอร์คนนี้จากหลังบ้าน
+                const res = await fetch(`${BACKEND_URL}/api/chats/${email}`);
+                const history = await res.json();
+                
+                box.innerHTML = ""; // ล้างตัวหนังสือโหลดติ้งออก
+
+                if (history.length === 0) {
+                    box.innerHTML = `<p class="text-slate-500 italic text-center">ไม่มีประวัติการสนทนาก่อนหน้า เริ่มต้นพิมพ์คุยได้เลย</p>`;
+                } else {
+                    // วาดประวัติแชททั้งหมดคืนชีพขึ้นมาบนหน้าจออีกครั้ง
+                    history.forEach(chat => {
+                        const isMe = chat.sender === myEmail;
+                        appendAdminMessage(chat.sender, chat.message, isMe, chat.timestamp);
+                    });
+                }
+            } catch (err) {
+                box.innerHTML = `<p class="text-red-400 italic text-center">โหลดประวัติแชทผิดพลาด</p>`;
+            }
+        }
+
+        function sendAdminMsg() {
+            const input = document.getElementById('admin-chat-input');
+            const message = input.value.trim();
+
+            if (!activeTargetUser) return alert("กรุณาเลือกผู้ใช้งานที่ต้องการจะคุยด้วยก่อนครับ");
+            if (!message) return;
+
+            const timestamp = new Date();
+            appendAdminMessage(myEmail, message, true, timestamp);
+
+            socket.emit('send_private_message', {
+                sender: myEmail,
+                receiver: activeTargetUser,
+                message: message
+            });
+
+            input.value = "";
+        }
+
+        function appendAdminMessage(sender, message, isMe, timestamp) {
+            const box = document.getElementById('admin-chat-messages');
+            const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const msgHtml = isMe ? `
+                <div class="flex flex-col items-end">
+                    <div class="bg-amber-500 text-slate-950 font-medium rounded-2xl rounded-tr-none px-4 py-2 max-w-[80%]">${message}</div>
+                    <span class="text-[10px] text-slate-500 mt-1">${timeStr}</span>
+                </div>
+            ` : `
+                <div class="flex flex-col items-start">
+                    <span class="text-xs text-indigo-400 font-bold mb-1">${sender}</span>
+                    <div class="bg-slate-800 border border-slate-700 text-slate-100 rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%]">${message}</div>
+                    <span class="text-[10px] text-slate-500 mt-1">${timeStr}</span>
+                </div>
+            `;
+            
+            box.insertAdjacentHTML('beforeend', msgHtml);
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>

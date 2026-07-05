@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ศูนย์ช่วยเหลือผู้ใช้งาน (User Portal)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden min-h-[550px] flex flex-col justify-between">
+        
+        <!-- ส่วนหัวข้อ -->
+        <div class="bg-slate-950 p-4 border-b border-slate-700 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-bold text-indigo-400">👤 ศูนย์บริการลูกค้า</h1>
+                <p id="user-display-status" class="text-xs text-slate-400">กรุณาเข้าสู่ระบบก่อนเริ่มใช้งาน</p>
+            </div>
+            <div id="status-dot" class="w-3 h-3 rounded-full bg-red-500"></div>
+        </div>
+
+        <!-- บล็อก 1: ฟอร์มเข้าสู่ระบบ (จะหายไปเมื่อล็อกอินแล้ว) -->
+        <div id="login-section" class="p-6 flex-1 flex flex-col justify-center space-y-4">
+            <h2 class="text-xl font-bold text-center">เข้าสู่ระบบเพื่อติดต่อเจ้าหน้าที่</h2>
+            <p class="text-slate-400 text-sm text-center">ข้อมูลการล็อกอินของคุณจะถูกรวบรวมไว้ที่ระบบหลังบ้าน</p>
+            <input type="email" id="user-email" placeholder="กรอกอีเมลของคุณ เช่น kaimook@mail.com" 
+                class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 w-full focus:outline-none focus:border-indigo-500 text-slate-100">
+            <button onclick="handleLogin()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition w-full">
+                เริ่มการสนทนา
+            </button>
+        </div>
+
+        <!-- บล็อก 2: หน้าต่างแชท (จะแสดงขึ้นมาหลังจากเข้าสู่ระบบ) -->
+        <div id="chat-section" class="hidden flex-1 p-4 flex flex-col justify-between bg-slate-900/50">
+            <!-- กล่องแสดงข้อความ -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 p-2 text-sm max-h-[360px]">
+                <p class="text-slate-500 italic text-center my-auto">เจ้าหน้าที่พร้อมให้บริการแล้ว พิมพ์ข้อความสอบถามได้เลยค่ะ</p>
+            </div>
+            
+            <!-- ช่องพิมพ์ส่งข้อความ -->
+            <div class="mt-4 flex gap-2">
+                <input type="text" id="chat-input" placeholder="พิมพ์ข้อความที่นี่..." 
+                    class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 w-full focus:outline-none focus:border-indigo-500"
+                    onkeypress="if(event.key === 'Enter') sendMsg()">
+                <button onclick="sendMsg()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 rounded-xl transition">
+                    ส่ง
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:3000";
+        let socket;
+        let myEmail = "";
+        const adminEmail = "admin@system.com";
+
+        async function handleLogin() {
+            const emailInput = document.getElementById('user-email').value.trim();
+            if (!emailInput) return alert("กรุณากรอกอีเมลของคุณก่อนครับ");
+
+            myEmail = emailInput;
+
+            try {
+                // 1. ส่งข้อมูลไปรวบรวมไว้หลังบ้านผ่าน API
+                const res = await fetch(`${BACKEND_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: myEmail })
+                });
+                
+                if (!res.ok) throw new Error();
+
+                // 2. เชื่อมต่อระบบแชทผ่าน Socket
+                socket = io(BACKEND_URL);
+                socket.emit('register_user', myEmail);
+
+                // เปลี่ยนหน้าจอ UI
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('chat-section').classList.remove('hidden');
+                document.getElementById('user-display-status').innerText = `บัญชี: ${myEmail}`;
+                document.getElementById('status-dot').className = "w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]";
+
+                // ดึงตัวรับข้อความมาทำงาน
+                listenToMessages();
+
+            } catch (err) {
+                alert("ไม่สามารถเชื่อมต่อระบบหลังบ้านได้ กรุณาตรวจสอบว่าเปิด Server หรือยัง");
+            }
+        }
+
+        function sendMsg() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // วาดข้อความฝั่งตัวเองขึ้นจอก่อนทันที
+            appendMessage(myEmail, message, true);
+
+            // ส่งข้อมูลแชทไปให้หลังบ้านส่งต่อให้แอดมิน
+            socket.emit('send_private_message', {
+                sender: myEmail,
+                receiver: adminEmail,
+                message: message
+            });
+
+            input.value = "";
+        }
+
+        function listenToMessages() {
+            socket.on('receive_private_message', (data) => {
+                // แสดงผลเมื่อคนส่งข้อความคือแอดมิน และส่งมาหาเราเท่านั้น
+                if (data.sender === adminEmail && data.receiver === myEmail) {
+                    appendMessage(data.sender, data.message, false);
+                }
+            });
+        }
+
+        function appendMessage(sender, message, isMe) {
+            const box = document.getElementById('chat-messages');
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const msgHtml = isMe ? `
+                <div class="flex flex-col items-end">
+                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[80%]">${message}</div>
+                    <span class="text-[10px] text-slate-500 mt-1">${timeStr}</span>
+                </div>
+            ` : `
+                <div class="flex flex-col items-start">
+                    <span class="text-xs text-amber-400 font-bold mb-1">เจ้าหน้าที่ (Admin)</span>
+                    <div class="bg-slate-800 border border-slate-700 text-slate-100 rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%]">${message}</div>
+                    <span class="text-[10px] text-slate-500 mt-1">${timeStr}</span>
+                </div>
+            `;
+            
+            box.insertAdjacentHTML('beforeend', msgHtml);
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>
